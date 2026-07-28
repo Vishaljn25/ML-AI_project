@@ -4,10 +4,15 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split, GridSearchCV
 
+from sklearn.metrics import (
+    mean_absolute_error, mean_squared_error, r2_score,
+    accuracy_score, precision_score, recall_score, f1_score,
+    confusion_matrix, classification_report
+)
 # ---------------------------------------------------------
 # STEP 1: Load the raw dataset
 # ---------------------------------------------------------
-file_path = r"C:\Users\User 1\Downloads\Resaleflatprices.csv"
+file_path = r"C:\Local_Git_Repository\MLAI_project\Resaleflatprices.csv"
 df = pd.read_csv(file_path)
 print("Full dataset shape:", df.shape)
 
@@ -24,7 +29,7 @@ print("Sampled dataset shape:", new_df.shape)
 # ---------------------------------------------------------
 # street_name and block are too specific (almost every flat has a unique
 # combination) to help a model find general patterns, so we remove them.
-new_df.drop(columns=["street_name", "block"], inplace=True)
+new_df.drop(columns=["street_name", "block", "lease_commence_date"], inplace=True)
 
 
 # ---------------------------------------------------------
@@ -100,11 +105,8 @@ print(new_df[["sale_year", "sale_month"]].head())
 # so we assign each unique category its own number code.
 # Example: town might become ANG MO KIO -> 0, BEDOK -> 1, BISHAN -> 2, etc.
 
-for col in ["town", "flat_type", "flat_model"]:
-    new_df[col] = new_df[col].astype("category").cat.codes
+new_df = pd.get_dummies(new_df, columns=["town", "flat_type", "flat_model"], drop_first=True)
 
-print("\nExample of category encoding:")
-print(new_df[["town", "flat_type", "flat_model"]].head())
 
 
 # ---------------------------------------------------------
@@ -113,3 +115,33 @@ print(new_df[["town", "flat_type", "flat_model"]].head())
 print("\nFinal cleaned dataset:")
 print(new_df.head())
 print("Final shape:", np.shape(new_df))
+
+
+
+
+features = [col for col in new_df.columns if col != "resale_price"]
+X = new_df[features]
+y = new_df["resale_price"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+print("Model trained successfully.")
+
+y_pred = model.predict(X_test)
+
+print(pd.DataFrame({
+    "Actual resale Price": y_test.values,
+    "Predicted resale price": y_pred.round(1)
+}).head(10))
+
+mae = mean_absolute_error(y_test, y_pred)
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+r2 = r2_score(y_test, y_pred)
+
+print("MAE :", round(mae, 2))
+print("RMSE:", round(rmse, 2))
+print("R²  :", round(r2, 2))
+
