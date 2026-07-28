@@ -3,12 +3,13 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split, GridSearchCV
-
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import (
     mean_absolute_error, mean_squared_error, r2_score,
     accuracy_score, precision_score, recall_score, f1_score,
     confusion_matrix, classification_report
 )
+from sklearn.ensemble import RandomForestRegressor
 # ---------------------------------------------------------
 # STEP 1: Load the raw dataset
 # ---------------------------------------------------------
@@ -130,25 +131,32 @@ print("\nFinal shape:", new_df.shape)
 features = ["town", "flat_type", "floor_area_sqm", "flat_model", "storey_mid","remaining_lease_years","sale_year","sale_month"]
 X = new_df[features]
 y = new_df["resale_price"]
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, 
+)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-model = LinearRegression()
-model.fit(X_train, y_train)
-
-print("Model trained successfully.")
-
-y_pred = model.predict(X_test)
+tree_model = DecisionTreeRegressor(max_depth=15, random_state=42)
+tree_model.fit(X_train, y_train)
+y_pred_tree = tree_model.predict(X_test)
 
 print(pd.DataFrame({
-    "Actual resale Price": y_test.values,
-    "Predicted resale price": y_pred.round(1)
+    "Actual resale_prices": y_test.values,
+    "Predicted resale_prices": y_pred_tree.round(1)
 }).head(10))
 
-mae = mean_absolute_error(y_test, y_pred)
-rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-r2 = r2_score(y_test, y_pred)
+mae = mean_absolute_error(y_test, y_pred_tree)
+rmse = np.sqrt(mean_squared_error(y_test, y_pred_tree))
+r2 = r2_score(y_test, y_pred_tree)
 
 print("MAE :", round(mae, 2))
 print("RMSE:", round(rmse, 2))
 print("R²  :", round(r2, 2))
+forest_model = RandomForestRegressor(n_estimators=100, max_depth=15, random_state=42)
+forest_model.fit(X_train, y_train)
+y_pred_forest = forest_model.predict(X_test)
+print(pd.DataFrame({
+    "Actual resale_prices": y_test.values,
+    "Predicted resale_prices": y_pred_forest.round(1)
+}).head(10))
+print("Random Forest R²:", round(r2_score(y_test, y_pred_forest), 3))
+print("Random Forest MAE:", round(mean_absolute_error(y_test, y_pred_forest), 2))
