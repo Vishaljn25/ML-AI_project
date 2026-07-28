@@ -18,11 +18,11 @@ file_path = r"C:\Local_Git_Repository\MLAI_project\Resaleflatprices.csv"
 df = pd.read_csv(file_path)
 print("Full dataset shape:", df.shape)
 
-new_df = df.sample(n=50000, random_state=42).copy()
+new_df = df.sample(n=100000, random_state=42).copy()
 print("Sampled dataset shape:", new_df.shape)
 
 
-# ---------------------------------------------------------
+# ----------------------------------------------------- ----
 # STEP 2: Drop columns we don't need
 # ---------------------------------------------------------
 new_df.drop(columns=["street_name", "block", "lease_commence_date"], inplace=True)
@@ -129,13 +129,14 @@ print("\nFinal shape:", new_df.shape)
 
 
 features = ["town", "flat_type", "floor_area_sqm", "flat_model", "storey_mid","remaining_lease_years","sale_year","sale_month"]
-X = new_df[features]
+X = pd.get_dummies(new_df[features], columns=["town", "flat_type", "flat_model"])
+
 y = new_df["resale_price"]
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, 
 )
 
-tree_model = DecisionTreeRegressor(max_depth=15, random_state=42)
+tree_model = DecisionTreeRegressor(max_depth=20, random_state=42)
 tree_model.fit(X_train, y_train)
 y_pred_tree = tree_model.predict(X_test)
 
@@ -151,7 +152,7 @@ r2 = r2_score(y_test, y_pred_tree)
 print("MAE :", round(mae, 2))
 print("RMSE:", round(rmse, 2))
 print("R²  :", round(r2, 2))
-forest_model = RandomForestRegressor(n_estimators=100, max_depth=15, random_state=42)
+forest_model = RandomForestRegressor(n_estimators=300, max_depth=25, random_state=42)
 forest_model.fit(X_train, y_train)
 y_pred_forest = forest_model.predict(X_test)
 print(pd.DataFrame({
@@ -160,3 +161,19 @@ print(pd.DataFrame({
 }).head(10))
 print("Random Forest R²:", round(r2_score(y_test, y_pred_forest), 3))
 print("Random Forest MAE:", round(mean_absolute_error(y_test, y_pred_forest), 2))
+
+
+print("Tree train MAE:", mean_absolute_error(y_train, tree_model.predict(X_train)))
+print("Tree test MAE :", mae)
+
+print("Forest train MAE:", mean_absolute_error(y_train, forest_model.predict(X_train)))
+print("Forest test MAE :", mean_absolute_error(y_test, y_pred_forest))
+tree_param_grid = {
+    "max_depth": [5, 8, 10, 12, 15, 20],
+    "min_samples_leaf": [1, 5, 10, 20, 50],
+    "min_samples_split": [2, 10, 20, 50]
+}
+tree_grid = GridSearchCV(DecisionTreeRegressor(random_state=42), tree_param_grid,
+                          cv=5, scoring="neg_mean_absolute_error", n_jobs=-1)
+tree_grid.fit(X_train, y_train)
+print("Best params:", tree_grid.best_params_)
