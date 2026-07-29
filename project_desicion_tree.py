@@ -136,7 +136,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, 
 )
 
-tree_model = DecisionTreeRegressor(max_depth=20, random_state=42)
+tree_model = DecisionTreeRegressor(max_depth=10, random_state=42)
 tree_model.fit(X_train, y_train)
 y_pred_tree = tree_model.predict(X_test)
 
@@ -168,12 +168,38 @@ print("Tree test MAE :", mae)
 
 print("Forest train MAE:", mean_absolute_error(y_train, forest_model.predict(X_train)))
 print("Forest test MAE :", mean_absolute_error(y_test, y_pred_forest))
-tree_param_grid = {
-    "max_depth": [5, 8, 10, 12, 15, 20],
-    "min_samples_leaf": [1, 5, 10, 20, 50],
-    "min_samples_split": [2, 10, 20, 50]
-}
-tree_grid = GridSearchCV(DecisionTreeRegressor(random_state=42), tree_param_grid,
-                          cv=5, scoring="neg_mean_absolute_error", n_jobs=-1)
-tree_grid.fit(X_train, y_train)
-print("Best params:", tree_grid.best_params_)
+
+
+user_input_town = input("Enter town:").strip().upper()
+user_input_flat_type = input("Enter flat_type:").strip().upper()
+user_input_floor_area = float(input("Enter floor area(sqm):"))
+user_input_flat_model = input("Enter flat_model:").strip()
+user_input_storey_mid = float(input("Enter storey_mid:"))
+user_input_remaining_lease_years = float(input("Enter remaining lease left:"))
+user_input_sale_year = int(input("Enter sale_year:"))
+user_input_sale_month = int(input("Enter sale_month:"))
+
+# Build a single-row DataFrame using the RAW column names/values
+# (not the quoted variable-name strings from before)
+new_row_raw = pd.DataFrame([{
+    "town": user_input_town,
+    "flat_type": user_input_flat_type,
+    "floor_area_sqm": user_input_floor_area,
+    "flat_model": user_input_flat_model,
+    "storey_mid": user_input_storey_mid,
+    "remaining_lease_years": user_input_remaining_lease_years,
+    "sale_year": user_input_sale_year,
+    "sale_month": user_input_sale_month,
+}])
+
+# One-hot encode this row the same way training data was encoded
+new_row_encoded = pd.get_dummies(new_row_raw, columns=["town", "flat_type", "flat_model"])
+
+# Force it to have exactly the same columns as X_train (same order,
+# any dummy column not present in this input filled with 0)
+new_row_encoded = new_row_encoded.reindex(columns=X_train.columns, fill_value=0)
+
+new_y_pred_forest = forest_model.predict(new_row_encoded)
+new_y_pred_tree =  tree_model.predict(new_row_encoded)
+print("predicted resale_value:", round(new_y_pred_forest[0], 2))
+print("predicted resale_value:", round(new_y_pred_tree[0], 2))
