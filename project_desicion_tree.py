@@ -25,7 +25,7 @@ print("Sampled dataset shape:", new_df.shape)
 # ----------------------------------------------------- ----
 # STEP 2: Drop columns we don't need
 # ---------------------------------------------------------
-new_df.drop(columns=["street_name", "block", "lease_commence_date"], inplace=True)
+new_df.drop(columns=[ "block", "lease_commence_date"], inplace=True)
 
 
 # ---------------------------------------------------------
@@ -104,7 +104,7 @@ print("Current shape:", new_df.shape)
 # for the actual model input.
 
 legends = {}
-for col in ["town", "flat_type", "flat_model"]:
+for col in ["town", "flat_type","street_name" "flat_model"]:
     cat = new_df[col].astype("category")
     legends[col] = dict(enumerate(cat.cat.categories))
     new_df[col] = cat.cat.codes
@@ -128,8 +128,8 @@ print("\nFinal shape:", new_df.shape)
 
 
 
-features = ["town", "flat_type", "floor_area_sqm", "flat_model", "storey_mid","remaining_lease_years","sale_year","sale_month"]
-X = pd.get_dummies(new_df[features], columns=["town", "flat_type", "flat_model"])
+features = ["town", "flat_type","street_name" "floor_area_sqm", "flat_model", "storey_mid","remaining_lease_years","sale_year","sale_month"]
+X = pd.get_dummies(new_df[features], columns=["town", "flat_type","street_name", "flat_model"])
 
 y = new_df["resale_price"]
 X_train, X_test, y_train, y_test = train_test_split(
@@ -172,6 +172,7 @@ print("Forest test MAE :", mean_absolute_error(y_test, y_pred_forest))
 
 user_input_town = input("Enter town:").strip().upper()
 user_input_flat_type = input("Enter flat_type:").strip().upper()
+user_input_street_name = input("Enter street_name:").strip().upper()
 user_input_floor_area = float(input("Enter floor area(sqm):"))
 user_input_flat_model = input("Enter flat_model:").strip()
 user_input_storey_mid = float(input("Enter storey_mid:"))
@@ -184,6 +185,7 @@ user_input_sale_month = int(input("Enter sale_month:"))
 new_row_raw = pd.DataFrame([{
     "town": user_input_town,
     "flat_type": user_input_flat_type,
+    "street_name": user_input_street_name,
     "floor_area_sqm": user_input_floor_area,
     "flat_model": user_input_flat_model,
     "storey_mid": user_input_storey_mid,
@@ -193,7 +195,7 @@ new_row_raw = pd.DataFrame([{
 }])
 
 # One-hot encode this row the same way training data was encoded
-new_row_encoded = pd.get_dummies(new_row_raw, columns=["town", "flat_type", "flat_model"])
+new_row_encoded = pd.get_dummies(new_row_raw, columns=["town", "flat_type","street_name", "flat_model"])
 
 # Force it to have exactly the same columns as X_train (same order,
 # any dummy column not present in this input filled with 0)
