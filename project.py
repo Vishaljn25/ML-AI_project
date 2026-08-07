@@ -114,13 +114,29 @@ new_df["street_name_freq"] = new_df["street_name"].map(street_freq_map)
 
 
 # ---------------------------------------------------------
-# STEP 9: Label-encode town, flat_type, flat_model (with legend)
+# STEP 9: (FIXED) town, flat_type, flat_model are left as raw
+# strings here — do NOT label-encode them before one-hot encoding.
 # ---------------------------------------------------------
-legends = {}
-for col in ["town", "flat_type", "street_name", "flat_model"]:
-    cat = new_df[col].astype("category")
-    legends[col] = dict(enumerate(cat.cat.categories))
-    new_df[col] = cat.cat.codes
+# Previously this block ran new_df[col] = new_df[col].astype("category").cat.codes
+# for town/flat_type/flat_model, turning them into integers (0, 1, 2...).
+# Step 10 then one-hot encoded those integers, producing columns like
+# "town_0", "flat_type_3". But the holdout-validation and manual-input
+# sections further down build their dummies from the ORIGINAL STRING
+# values ("town_ANG MO KIO", "flat_type_4 ROOM"). Those column names
+# never match "town_0" / "flat_type_3", so after reindex(..., fill_value=0)
+# every town/flat_type/flat_model dummy silently became 0 for every
+# holdout row and every manual prediction — the model was effectively
+# blind to town, flat_type, and flat_model whenever predicting on new
+# data, even though it used them fine on the training/test split.
+#
+# Fix: keep town/flat_type/flat_model as plain strings all the way
+# through to pd.get_dummies() in Step 10 (and in the holdout/manual
+# sections), so the same string values produce the same dummy column
+# names everywhere. street_name is untouched here since only its
+# frequency-encoded version (street_name_freq) is used as a feature.
+new_df["town"] = new_df["town"].astype(str).str.strip().str.upper()
+new_df["flat_type"] = new_df["flat_type"].astype(str).str.strip().str.upper()
+new_df["flat_model"] = new_df["flat_model"].astype(str).str.strip()
 
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", 200)
@@ -624,7 +640,7 @@ plt.show()
 #   Enter floor area(s): 65, 90, 110
 # predicts 3 separate flats in one go. A single value with no
 # comma still works exactly as before (predicts just one flat).
-# ===========================================================
+# ---------------------------------------------------------
 def parse_str_list(prompt, upper=False):
     raw = input(prompt)
     items = [item.strip() for item in raw.split(",")]
