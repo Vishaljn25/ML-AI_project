@@ -25,12 +25,7 @@ print("Sampled dataset shape:", new_df.shape)
 
 # ---------------------------------------------------------
 # STEP 1b: Set aside a TRUE holdout set of 10 rows that are NOT
-# part of the 50,000-row sample used anywhere in training or the
-# X_test/y_test split. This is a stronger real-world check than
-# X_test/y_test, since those 10,000 test rows are still drawn from
-# inside the same 50k sample the models were tuned against — these
-# 10 rows are excluded from the raw dataset before that sampling
-# even happens.
+# part of the 50000 to compare the models in the end.
 # ---------------------------------------------------------
 remaining_df = df.drop(new_df.index).copy()
 holdout_raw = remaining_df.sample(n=10, random_state=7).copy()
@@ -114,26 +109,10 @@ new_df["street_name_freq"] = new_df["street_name"].map(street_freq_map)
 
 
 # ---------------------------------------------------------
-# STEP 9: (FIXED) town, flat_type, flat_model are left as raw
+# STEP 9:  town, flat_type, flat_model are left as raw
 # strings here — do NOT label-encode them before one-hot encoding.
 # ---------------------------------------------------------
-# Previously this block ran new_df[col] = new_df[col].astype("category").cat.codes
-# for town/flat_type/flat_model, turning them into integers (0, 1, 2...).
-# Step 10 then one-hot encoded those integers, producing columns like
-# "town_0", "flat_type_3". But the holdout-validation and manual-input
-# sections further down build their dummies from the ORIGINAL STRING
-# values ("town_ANG MO KIO", "flat_type_4 ROOM"). Those column names
-# never match "town_0" / "flat_type_3", so after reindex(..., fill_value=0)
-# every town/flat_type/flat_model dummy silently became 0 for every
-# holdout row and every manual prediction — the model was effectively
-# blind to town, flat_type, and flat_model whenever predicting on new
-# data, even though it used them fine on the training/test split.
-#
-# Fix: keep town/flat_type/flat_model as plain strings all the way
-# through to pd.get_dummies() in Step 10 (and in the holdout/manual
-# sections), so the same string values produce the same dummy column
-# names everywhere. street_name is untouched here since only its
-# frequency-encoded version (street_name_freq) is used as a feature.
+
 new_df["town"] = new_df["town"].astype(str).str.strip().str.upper()
 new_df["flat_type"] = new_df["flat_type"].astype(str).str.strip().str.upper()
 new_df["flat_model"] = new_df["flat_model"].astype(str).str.strip()
@@ -162,16 +141,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 # ===========================================================
 # HYPERPARAMETER TUNING for HGB and Random Forest (SPEED FIXES)
 # ===========================================================
-# Speed fixes applied vs the previous version:
-#  1. n_jobs=-1 removed from RandomForestRegressor itself (was fighting
-#     with RandomizedSearchCV's own n_jobs=-1 for CPU cores)
-#  2. cv folds reduced 5 -> 3
-#  3. n_iter reduced 30 -> 15 candidates
-#  4. Removed max_depth=None (unbounded trees) from both search spaces
-#     — unbounded trees are the slowest candidates AND the most prone
-#     to overfitting, so cutting them helps speed and quality together
-#  5. Narrower n_estimators / max_iter ranges so no single candidate
-#     is disproportionately slow
+
 cv = KFold(n_splits=3, shuffle=True, random_state=42)
 
 # ---------------------------------------------------------
@@ -236,8 +206,7 @@ y_pred_forest = forest_model.predict(X_test)
 
 
 # ===========================================================
-# MODEL EVALUATION & COMPARISON — now includes MSE everywhere
-# alongside MAE, RMSE, and R²
+# MODEL EVALUATION & COMPARISON 
 # ===========================================================
 def get_metrics(y_true, y_pred):
     mae = mean_absolute_error(y_true, y_pred)
@@ -301,7 +270,7 @@ plt.show()
 
 
 # ---------------------------------------------------------
-# Metric comparison bar chart — now 4 panels: MAE, MSE, RMSE, R2
+# Metric comparison bar chart  4 panels: MAE, MSE, RMSE, R2
 # ---------------------------------------------------------
 metrics_df = pd.DataFrame({
     "Model": ["HGB", "Random Forest"],
@@ -368,19 +337,7 @@ plt.savefig("overfit_check.png", dpi=150)
 plt.show()
 
 
-# ---------------------------------------------------------
-# Feature importance — grouped back to the ORIGINAL features
-# (town, flat_type, street_name_freq, floor_area_sqm, flat_model,
-# storey_mid, remaining_lease_years, sale_year, sale_month)
-# ---------------------------------------------------------
-# town, flat_type, and flat_model were one-hot encoded into many dummy
-# columns (e.g. "town_ANG MO KIO", "town_BEDOK", ...). Permuting those
-# dummy columns one at a time (as before) only tells you the importance
-# of a single category, not the feature as a whole. Instead, this
-# shuffles ALL dummy columns belonging to one original feature together
-# (same row order across the group), which measures how much the model
-# relies on that original feature as a whole. Works for HGB and Random
-# Forest identically since it doesn't depend on either model's internals.
+
 original_features = [
     "town", "flat_type", "street_name_freq", "floor_area_sqm", "flat_model",
     "storey_mid", "remaining_lease_years", "sale_year", "sale_month",
