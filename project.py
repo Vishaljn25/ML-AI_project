@@ -422,6 +422,8 @@ def preprocess_raw_rows(raw_slice, street_freq_lookup):
 
     return d[["town", "flat_type", "street_name_freq", "floor_area_sqm", "flat_model",
               "storey_mid", "remaining_lease_years", "sale_year", "sale_month"]]
+# ===========================================================
+# Now we have to  encode the holdout data as it was taken before the encoding
 
 holdout_actual = holdout_raw["resale_price"].values
 holdout_features = preprocess_raw_rows(holdout_raw, street_freq_map)
@@ -612,6 +614,7 @@ def parse_float_list(prompt):
 def parse_int_list(prompt):
     raw = input(prompt)
     return [int(item.strip()) for item in raw.split(",")]
+
 
 towns = parse_str_list("Enter town(s), comma-separated for multiple: ", upper=True)
 flat_types = parse_str_list("Enter flat_type(s), comma-separated for multiple: ", upper=True)
