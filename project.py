@@ -12,7 +12,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import HistGradientBoostingRegressor
 
 # ---------------------------------------------------------
-# STEP 1: Load the raw dataset
+# STEP 1: Load the raw dataseta
+# for file_path edit it to the file path download in your computer
 # ---------------------------------------------------------
 file_path = r"C:\Local_Git_Repository\MLAI_project\Resaleflatprices.csv"
 
@@ -97,7 +98,7 @@ for col in ["resale_price", "floor_area_sqm", "remaining_lease_years"]:
 
 
 # ---------------------------------------------------------
-# STEP 8: Frequency-encode street_name (SPEED FIX)
+# STEP 8: Frequency-encode street_name 
 # ---------------------------------------------------------
 # street_name has 500+ unique values. One-hot encoding it exploded the
 # column count and slowed down every model fit (especially Random Forest
@@ -110,7 +111,7 @@ new_df["street_name_freq"] = new_df["street_name"].map(street_freq_map)
 
 # ---------------------------------------------------------
 # STEP 9:  town, flat_type, flat_model are left as raw
-# strings here — do NOT label-encode them before one-hot encoding.
+# strings here 
 # ---------------------------------------------------------
 
 new_df["town"] = new_df["town"].astype(str).str.strip().str.upper()
@@ -124,8 +125,7 @@ print("\nFinal shape:", new_df.shape)
 
 
 # ---------------------------------------------------------
-# STEP 10: Build features (street_name is now a frequency
-# column, NOT one-hot encoded — this is the main speed win)
+# STEP 10: Build features 
 # ---------------------------------------------------------
 features = ["town", "flat_type", "street_name_freq", "floor_area_sqm", "flat_model",
             "storey_mid", "remaining_lease_years", "sale_year", "sale_month"]
@@ -572,8 +572,8 @@ for row_idx in range(1, len(table_df) + 1):
 
 # Legend explaining the row colors, placed just under the table
 legend_handles = [
-    Patch(facecolor=HGB_WIN_COLOR, edgecolor="black", label="HGB more accurate this row"),
-    Patch(facecolor=FOREST_WIN_COLOR, edgecolor="black", label="Random Forest more accurate this row"),
+    Patch(facecolor=HGB_WIN_COLOR, edgecolor="black", label="HGB has a lesser degree of error in   this row"),
+    Patch(facecolor=FOREST_WIN_COLOR, edgecolor="black", label="Random Forest has a lesser degree of error in this row"),
 ]
 ax.legend(
     handles=legend_handles,
@@ -592,14 +592,7 @@ plt.show()
 
 # ===========================================================
 # MANUAL PREDICTION FROM USER INPUT
-# Supports entering MULTIPLE flats at once: separate each value
-# with a comma. Position 1 in every field = flat 1, position 2 =
-# flat 2, etc. e.g.
-#   Enter town(s): ANG MO KIO, BEDOK, TAMPINES
-#   Enter floor area(s): 65, 90, 110
-# predicts 3 separate flats in one go. A single value with no
-# comma still works exactly as before (predicts just one flat).
-# ---------------------------------------------------------
+# ===========================================================
 def parse_str_list(prompt, upper=False):
     raw = input(prompt)
     items = [item.strip() for item in raw.split(",")]
