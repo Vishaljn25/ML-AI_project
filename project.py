@@ -81,7 +81,7 @@ new_df.drop(columns=["month"], inplace=True)
 
 
 # ---------------------------------------------------------
-# STEP 7: Check for outliers (detection only — nothing removed)
+# STEP 7: Check for outliers git push
 # ---------------------------------------------------------
 def check_outliers_iqr(frame, col):
     q1 = frame[col].quantile(0.25)
